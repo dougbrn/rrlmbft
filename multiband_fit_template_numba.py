@@ -914,7 +914,8 @@ def plot_lc(lc_in, ax=None, mag=True, title=None, err_cutoff = 0.5, bare=True, f
         ylabel = 'mag' if mag else 'flux (nJy)'
         if title is None:
             title = f"Lightcurve {lc.id} at ({lc.ra:.2f}, {lc.dec:.2f})"
-        ax.errorbar(this.midpointMjdTai, this.psfMag, yerr=this.psfMagErr, color=filter_colors[band], label=band, ls=' ', marker='.') #err_mask was on these
+        err_mask = this.psfMagErr <= err_cutoff
+        ax.errorbar(this.midpointMjdTai[err_mask], this.psfMag[err_mask], yerr=this.psfMagErr[err_mask], color=filter_colors[band], label=band, ls=' ', marker='.') #err_mask was on these
         ax.set(xlabel = 'MJD', ylabel = ylabel, title=title)
         ax.legend()
     if mag:
@@ -934,8 +935,9 @@ def phase_fold_lc(lc_in, period, ax=None, mag=True, title=None, coeff=0, err_cut
         ylabel = 'mag' if mag else 'flux (nJy)'
         if title is None:
             title = f"Phase-Folded Lightcurve {lc.id} with period {period:0.3f} days at ({lc.ra:.2f}, {lc.dec:.2f})"
+        err_mask = this.psfMagErr <= err_cutoff
         phase = np.mod(this.midpointMjdTai + coeff*period, period)/period
-        ax.errorbar(phase, this.psfMag, yerr=this.psfMagErr, color=filter_colors[band], label=band, ls=' ', marker='.') #err_mask was on these
+        ax.errorbar(phase[err_mask], this.psfMag[err_mask], yerr=this.psfMagErr[err_mask], color=filter_colors[band], label=band, ls=' ', marker='.') #err_mask was on these
         ax.legend()
         ax.set(xlabel = 'phase', ylabel = ylabel, title=title)
     if mag:
@@ -1145,6 +1147,7 @@ def reorder_template_for_lc(tem_py, lc_bands):
     tem_new["model_error"] = me_new
 
     # If abs_mag uses tem['betas'] it will now use the reordered betas; no further change needed.
+    tem_new["abs_mag"] = _make_abs_mag_func(betas_new)  # regenerate using reordered betas
     return tem_new
 
 # ---------- Template I/O functions ----------
